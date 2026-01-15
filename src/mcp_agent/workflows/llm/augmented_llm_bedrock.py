@@ -411,6 +411,7 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                 response_content: list[ContentBlockUnionTypeDef] = []
                 current_text_block = ""
                 current_tool_use_block = None
+                usage_data = {}
 
                 for event in stream_response["stream"]:
                     # Handle content block start
@@ -460,8 +461,12 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                         last_stop_reason = stop_reason
                         break
 
-                # Get usage from metadata
-                usage = stream_response.get("usage", {})
+                    # Handle metadata event for usage
+                    elif "metadata" in event:
+                        usage_data = event["metadata"].get("usage", {})
+
+                # Get usage from metadata event
+                usage = stream_response.get("metadata", {}).get("usage", {}) if not usage_data else usage_data
                 iteration_input = usage.get("inputTokens", 0)
                 iteration_output = usage.get("outputTokens", 0)
 
