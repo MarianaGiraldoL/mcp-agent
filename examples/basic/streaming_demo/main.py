@@ -38,14 +38,16 @@ async def demo_basic_streaming(agent: Agent):
             "Tell me a short story (3 paragraphs) about a robot learning to paint"
         ):
             if event.type == StreamEventType.TEXT_DELTA:
-                full_text += event.content
-                live.update(Markdown(full_text))
+                if event.content:
+                    full_text += event.content
+                    live.update(Markdown(full_text))
 
             elif event.type == StreamEventType.COMPLETE:
-                console.print(
-                    f"\n[dim]✓ Complete (Tokens: in={event.usage['input_tokens']}, "
-                    f"out={event.usage['output_tokens']})[/dim]"
-                )
+                if event.usage:
+                    console.print(
+                        f"\n[dim]✓ Complete (Tokens: in={event.usage['input_tokens']}, "
+                        f"out={event.usage['output_tokens']})[/dim]"
+                    )
 
 
 async def demo_streaming_with_tools(agent: Agent):
