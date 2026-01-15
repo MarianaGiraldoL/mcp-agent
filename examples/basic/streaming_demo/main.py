@@ -186,17 +186,19 @@ async def demo_progress_tracking(agent: Agent):
                 )
 
             elif event.type == StreamEventType.TOOL_USE_START:
-                progress.update(
-                    task,
-                    description=f"Calling tool: {event.content['name']}...",
-                )
+                if event.content:
+                    progress.update(
+                        task,
+                        description=f"Calling tool: {event.content.get('name', 'unknown')}...",
+                    )
 
             elif event.type == StreamEventType.ITERATION_END:
                 tokens = event.usage
-                progress.update(
-                    task,
-                    description=f"Iteration complete (in={tokens['input_tokens']}, out={tokens['output_tokens']})",
-                )
+                if tokens:
+                    progress.update(
+                        task,
+                        description=f"Iteration complete (in={tokens.get('input_tokens', 0)}, out={tokens.get('output_tokens', 0)})",
+                    )
 
             elif event.type == StreamEventType.COMPLETE:
                 progress.update(task, description="[green]✓ Complete[/green]")
