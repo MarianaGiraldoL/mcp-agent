@@ -9,7 +9,8 @@ Stream text as it's generated with real-time display:
 ```python
 async for event in llm.generate_stream("Tell me a story"):
     if event.type == StreamEventType.TEXT_DELTA:
-        print(event.content, end="", flush=True)
+        if event.content:
+            print(event.content, end="", flush=True)
 ```
 
 ### 2. **Streaming with Tool Calls**
@@ -17,7 +18,8 @@ Monitor tool execution in real-time during multi-iteration agentic loops:
 ```python
 async for event in llm.generate_stream("List files and read README"):
     if event.type == StreamEventType.TOOL_USE_START:
-        print(f"Calling tool: {event.content['name']}")
+        if event.content:
+            print(f"Calling tool: {event.content.get('name', 'unknown')}")
 ```
 
 ### 3. **Convenience Method**
@@ -141,11 +143,13 @@ Stream LLM generation events as they occur.
 ```python
 async for event in llm.generate_stream("Your prompt"):
     if event.type == StreamEventType.TEXT_DELTA:
-        # Handle text delta
-        pass
+        if event.content:
+            # Handle text delta
+            pass
     elif event.type == StreamEventType.TOOL_USE_START:
-        # Handle tool call
-        pass
+        if event.content:
+            # Handle tool call
+            pass
 ```
 
 ### `generate_str_stream(message, request_params=None)`

@@ -230,8 +230,9 @@ class TestStreamEvent:
             stop_reason="tool_use",
         )
 
-        assert event.usage["input_tokens"] == 150
-        assert event.usage["output_tokens"] == 75
+        assert event.usage is not None
+        assert event.usage.get("input_tokens") == 150
+        assert event.usage.get("output_tokens") == 75
         assert event.stop_reason == "tool_use"
 
     def test_thinking_event(self):

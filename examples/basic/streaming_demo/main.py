@@ -45,9 +45,11 @@ async def demo_basic_streaming(agent: Agent):
 
             elif event.type == StreamEventType.COMPLETE:
                 if event.usage:
+                    input_tokens = event.usage.get('input_tokens', 0)
+                    output_tokens = event.usage.get('output_tokens', 0)
                     console.print(
-                        f"\n[dim]✓ Complete (Tokens: in={event.usage['input_tokens']}, "
-                        f"out={event.usage['output_tokens']})[/dim]"
+                        f"\n[dim]✓ Complete (Tokens: in={input_tokens}, "
+                        f"out={output_tokens})[/dim]"
                     )
 
 

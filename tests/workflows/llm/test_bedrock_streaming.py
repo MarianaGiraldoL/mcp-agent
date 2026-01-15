@@ -106,7 +106,7 @@ class TestBedrockStreaming:
         # Check TEXT_DELTA events
         text_delta_events = [e for e in events if e.type == StreamEventType.TEXT_DELTA]
         assert len(text_delta_events) == 4
-        assert [e.content for e in text_delta_events] == text_deltas
+        assert [e.content for e in text_delta_events if e.content is not None] == text_deltas
 
         # Check ITERATION_END event
         iteration_end_events = [
@@ -114,8 +114,9 @@ class TestBedrockStreaming:
         ]
         assert len(iteration_end_events) == 1
         assert iteration_end_events[0].stop_reason == "end_turn"
-        assert iteration_end_events[0].usage["input_tokens"] == 100
-        assert iteration_end_events[0].usage["output_tokens"] == 50
+        assert iteration_end_events[0].usage is not None
+        assert iteration_end_events[0].usage.get("input_tokens") == 100
+        assert iteration_end_events[0].usage.get("output_tokens") == 50
 
         # Check COMPLETE event
         complete_events = [e for e in events if e.type == StreamEventType.COMPLETE]
@@ -180,7 +181,8 @@ class TestBedrockStreaming:
             e for e in events if e.type == StreamEventType.TOOL_USE_START
         ]
         assert len(tool_use_start_events) == 1
-        assert tool_use_start_events[0].content["name"] == "search"
+        assert tool_use_start_events[0].content is not None
+        assert tool_use_start_events[0].content.get("name") == "search"
 
         tool_result_events = [
             e for e in events if e.type == StreamEventType.TOOL_RESULT
@@ -257,8 +259,11 @@ class TestBedrockStreaming:
         # All text deltas should be yielded individually
         text_deltas = [e for e in events if e.type == StreamEventType.TEXT_DELTA]
         assert len(text_deltas) == 3
+        assert text_deltas[0].content is not None
         assert text_deltas[0].content == "First "
+        assert text_deltas[1].content is not None
         assert text_deltas[1].content == "second "
+        assert text_deltas[2].content is not None
         assert text_deltas[2].content == "third"
 
     @pytest.mark.asyncio
@@ -384,4 +389,5 @@ class TestBedrockStreaming:
             e for e in events if e.type == StreamEventType.TOOL_RESULT
         ]
         assert len(tool_result_events) == 1
-        assert tool_result_events[0].content["is_error"] is False
+        assert tool_result_events[0].content is not None
+        assert tool_result_events[0].content.get("is_error") is False
