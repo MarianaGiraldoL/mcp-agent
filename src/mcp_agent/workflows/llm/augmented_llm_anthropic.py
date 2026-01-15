@@ -519,6 +519,7 @@ class AnthropicAugmentedLLM(AugmentedLLM[MessageParam, Message]):
                         # Both native Anthropic client and OpenTelemetry-wrapped client
                         # return an async context manager from stream()
                         response = None
+                        yielded_content = False
 
                         try:
                             stream_context = client.messages.stream(**arguments)
@@ -530,6 +531,7 @@ class AnthropicAugmentedLLM(AugmentedLLM[MessageParam, Message]):
                                     # Handle text deltas
                                     if event.type == "content_block_delta":
                                         if hasattr(event.delta, "text"):
+                                            yielded_content = True
                                             yield StreamEvent(
                                                 type=StreamEventType.TEXT_DELTA,
                                                 content=event.delta.text,
@@ -556,7 +558,10 @@ class AnthropicAugmentedLLM(AugmentedLLM[MessageParam, Message]):
                                 response = await stream.get_final_message()
 
                         except Exception as stream_error:
-                            # If streaming fails entirely, fall back to non-streaming
+                            # Only fall back if no content was yielded
+                            if yielded_content:
+                                # Re-raise to trigger ERROR event, don't duplicate content
+                                raise
                             self.logger.warning(
                                 f"Streaming failed, falling back to create(): {stream_error}"
                             )
