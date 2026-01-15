@@ -101,8 +101,9 @@ async def demo_streaming_with_tools(agent: Agent):
 
             elif event.type == StreamEventType.COMPLETE:
                 console.print("\n[green]✓ All iterations complete[/green]")
+                metadata = event.metadata or {}
                 console.print(
-                    f"[dim]  Total iterations: {event.metadata.get('iterations', 0)}[/dim]"
+                    f"[dim]  Total iterations: {metadata.get('iterations', 0)}[/dim]"
                 )
 
 
