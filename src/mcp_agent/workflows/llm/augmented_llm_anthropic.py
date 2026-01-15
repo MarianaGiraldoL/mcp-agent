@@ -538,6 +538,13 @@ class AnthropicAugmentedLLM(AugmentedLLM[MessageParam, Message]):
                                                 iteration=i,
                                                 model=model,
                                             )
+                                        elif hasattr(event.delta, "thinking"):
+                                            yield StreamEvent(
+                                                type=StreamEventType.THINKING,
+                                                content=event.delta.thinking,
+                                                iteration=i,
+                                                model=model,
+                                            )
 
                                     # Handle thinking blocks (extended thinking models)
                                     elif event.type == "content_block_start":
