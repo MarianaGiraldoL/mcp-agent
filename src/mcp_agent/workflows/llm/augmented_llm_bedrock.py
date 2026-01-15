@@ -325,6 +325,7 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
 
             responses: list[MessageUnionTypeDef] = []
             model = await self.select_model(params)
+            last_stop_reason = None
 
             # Track total token usage across all iterations
             total_input_tokens = 0
@@ -345,7 +346,7 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                 if (
                     i == params.max_iterations - 1
                     and responses
-                    and responses[-1].get("stopReason") == "tool_use"
+                    and last_stop_reason == "tool_use"
                 ):
                     final_prompt_message: MessageUnionTypeDef = {
                         "role": "user",
@@ -456,6 +457,7 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                     # Handle message stop
                     elif "messageStop" in event:
                         stop_reason = event["messageStop"]["stopReason"]
+                        last_stop_reason = stop_reason
                         break
 
                 # Get usage from metadata
