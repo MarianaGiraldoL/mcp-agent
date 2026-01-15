@@ -154,7 +154,7 @@ async def demo_event_monitoring(agent: Agent):
     console.print(f"  • Tool calls: {len(tools)}")
 
     # Show full text
-    full_text = "".join(e.content for e in text_deltas)
+    full_text = "".join(e.content for e in text_deltas if e.content)
     console.print("\n[bold]Full Response:[/bold]")
     console.print(Panel(Markdown(full_text), border_style="cyan"))
 
