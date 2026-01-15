@@ -19,6 +19,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from mcp_agent import Agent
 from mcp_agent.workflows.llm.streaming_events import StreamEventType
+from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
 
 
 console = Console()
@@ -218,27 +219,31 @@ async def main():
         )
     )
 
-    # Initialize agent
+    # Initialize agent with async context manager
     agent = Agent(name="streaming_demo")
 
     try:
-        # Run all demos
-        await demo_basic_streaming(agent)
-        await demo_simple_text_stream(agent)
-        await demo_event_monitoring(agent)
-        await demo_progress_tracking(agent)
+        async with agent:
+            # Attach LLM to the agent
+            await agent.attach_llm(AnthropicAugmentedLLM)
 
-        # This demo requires filesystem tools - optional
-        if agent.mcp_servers:
-            await demo_streaming_with_tools(agent)
-        else:
+            # Run all demos
+            await demo_basic_streaming(agent)
+            await demo_simple_text_stream(agent)
+            await demo_event_monitoring(agent)
+            await demo_progress_tracking(agent)
+
+            # This demo requires filesystem tools - optional
+            if agent.mcp_servers:
+                await demo_streaming_with_tools(agent)
+            else:
+                console.print(
+                    "\n[yellow]Note: Skipping tool demo (no MCP servers configured)[/yellow]"
+                )
+
             console.print(
-                "\n[yellow]Note: Skipping tool demo (no MCP servers configured)[/yellow]"
+                "\n[bold green]✓ All demos completed successfully![/bold green]\n"
             )
-
-        console.print(
-            "\n[bold green]✓ All demos completed successfully![/bold green]\n"
-        )
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Demo interrupted by user[/yellow]")
