@@ -71,25 +71,33 @@ async def demo_streaming_with_tools(agent: Agent):
                 console.print(f"\n[yellow]→ Iteration {current_iteration + 1}[/yellow]")
 
             elif event.type == StreamEventType.TEXT_DELTA:
-                full_text += event.content
-                live.update(Markdown(full_text))
+                if event.content:
+                    full_text += event.content
+                    live.update(Markdown(full_text))
 
             elif event.type == StreamEventType.TOOL_USE_START:
-                console.print(f"\n[blue]⚙ Calling tool: {event.content['name']}[/blue]")
-                console.print(f"[dim]  Input: {event.content['input']}[/dim]")
+                if event.content:
+                    tool_name = event.content.get('name', 'unknown')
+                    tool_input = event.content.get('input', {})
+                    console.print(f"\n[blue]⚙ Calling tool: {tool_name}[/blue]")
+                    console.print(f"[dim]  Input: {tool_input}[/dim]")
 
             elif event.type == StreamEventType.TOOL_RESULT:
-                is_error = event.content.get("is_error", False)
-                status = (
-                    "[red]✗ Error[/red]" if is_error else "[green]✓ Success[/green]"
-                )
-                console.print(f"[blue]  {status}[/blue]")
+                if event.content:
+                    is_error = event.content.get("is_error", False)
+                    status = (
+                        "[red]✗ Error[/red]" if is_error else "[green]✓ Success[/green]"
+                    )
+                    console.print(f"[blue]  {status}[/blue]")
 
             elif event.type == StreamEventType.ITERATION_END:
-                console.print(
-                    f"[dim]  Tokens: in={event.usage['input_tokens']}, "
-                    f"out={event.usage['output_tokens']}[/dim]"
-                )
+                if event.usage:
+                    input_tokens = event.usage.get('input_tokens', 0)
+                    output_tokens = event.usage.get('output_tokens', 0)
+                    console.print(
+                        f"[dim]  Tokens: in={input_tokens}, "
+                        f"out={output_tokens}[/dim]"
+                    )
 
             elif event.type == StreamEventType.COMPLETE:
                 console.print("\n[green]✓ All iterations complete[/green]")
