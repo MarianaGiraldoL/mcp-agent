@@ -65,6 +65,11 @@ class TestBedrockStreaming:
         """Creates a Bedrock content block stop event."""
         return {"contentBlockStop": {}}
 
+    @staticmethod
+    def create_metadata_event(input_tokens=100, output_tokens=50):
+        """Creates a Bedrock metadata event with usage information."""
+        return {"metadata": {"usage": {"inputTokens": input_tokens, "outputTokens": output_tokens}}}
+
     @pytest.mark.asyncio
     async def test_single_turn_text_streaming(self, mock_llm):
         """Test single-turn text generation with streaming."""
@@ -73,6 +78,7 @@ class TestBedrockStreaming:
         mock_events = [self.create_text_delta_event(delta) for delta in text_deltas]
         mock_events.append(self.create_content_block_stop_event())
         mock_events.append(self.create_message_stop_event("end_turn"))
+        mock_events.append(self.create_metadata_event(input_tokens=100, output_tokens=50))
 
         mock_stream_response = self.create_mock_stream_response(mock_events)
 
@@ -132,6 +138,7 @@ class TestBedrockStreaming:
             ),
             self.create_content_block_stop_event(),
             self.create_message_stop_event("tool_use"),
+            self.create_metadata_event(input_tokens=50, output_tokens=20),
         ]
 
         # Second iteration: final text
@@ -140,6 +147,7 @@ class TestBedrockStreaming:
             self.create_text_delta_event(" on search"),
             self.create_content_block_stop_event(),
             self.create_message_stop_event("end_turn"),
+            self.create_metadata_event(input_tokens=80, output_tokens=10),
         ]
 
         # Mock tool execution
@@ -208,6 +216,7 @@ class TestBedrockStreaming:
                 self.create_text_delta_event("Text"),
                 self.create_content_block_stop_event(),
                 self.create_message_stop_event(stop_reason),
+                self.create_metadata_event(),
             ]
             mock_stream_response = self.create_mock_stream_response(mock_events)
 
@@ -240,6 +249,7 @@ class TestBedrockStreaming:
             self.create_text_delta_event("third"),
             self.create_content_block_stop_event(),
             self.create_message_stop_event("end_turn"),
+            self.create_metadata_event(),
         ]
 
         mock_stream_response = self.create_mock_stream_response(mock_events)
@@ -293,6 +303,7 @@ class TestBedrockStreaming:
             self.create_text_delta_event("Response"),
             self.create_content_block_stop_event(),
             self.create_message_stop_event("end_turn"),
+            self.create_metadata_event(),
         ]
         mock_stream_response = self.create_mock_stream_response(mock_events)
 
@@ -316,6 +327,7 @@ class TestBedrockStreaming:
         mock_events = [self.create_text_delta_event(delta) for delta in text_deltas]
         mock_events.append(self.create_content_block_stop_event())
         mock_events.append(self.create_message_stop_event("end_turn"))
+        mock_events.append(self.create_metadata_event())
 
         mock_stream_response = self.create_mock_stream_response(mock_events)
 
@@ -348,6 +360,7 @@ class TestBedrockStreaming:
             ),
             self.create_content_block_stop_event(),
             self.create_message_stop_event("tool_use"),
+            self.create_metadata_event(input_tokens=30, output_tokens=15),
         ]
 
         # Mock tool execution
@@ -361,6 +374,7 @@ class TestBedrockStreaming:
             self.create_text_delta_event("The answer is 3"),
             self.create_content_block_stop_event(),
             self.create_message_stop_event("end_turn"),
+            self.create_metadata_event(input_tokens=50, output_tokens=10),
         ]
 
         call_count = [0]
