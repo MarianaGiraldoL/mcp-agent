@@ -223,7 +223,7 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                     if content.get("toolUse"):
                         tool_use_block = content["toolUse"]
                         tool_name = tool_use_block["name"]
-                        tool_args = tool_use_block["input"]
+                        tool_args = self._parse_tool_input(tool_use_block["input"])
                         tool_use_id = tool_use_block["toolUseId"]
 
                         tool_call_request = CallToolRequest(
@@ -271,9 +271,13 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
         """Parse tool input from JSON string to dict if needed.
 
         Bedrock streams tool input as a JSON string that needs parsing.
+        Returns empty dict for empty strings (tools with no arguments).
         Falls back to the original value if parsing fails.
         """
         if isinstance(tool_input, str):
+            # Handle empty string as no arguments
+            if tool_input == "":
+                return {}
             try:
                 return json.loads(tool_input)
             except json.JSONDecodeError:
@@ -418,7 +422,7 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                     if "contentBlockStart" in event:
                         block_start = event["contentBlockStart"]
                         if "toolUse" in block_start.get("start", {}):
-                            current_tool_use_block = block_start["start"]["toolUse"]
+                            current_tool_use_block = dict(block_start["start"]["toolUse"])
 
                     # Handle text deltas
                     elif "contentBlockDelta" in event:
@@ -515,7 +519,9 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                     )
                     break
                 elif stop_reason == "tool_use":
-                    # Process tool calls
+                    # Collect all tool results first
+                    tool_results = []
+
                     for content in response_message["content"]:
                         if content.get("toolUse"):
                             tool_use_block = content["toolUse"]
@@ -530,6 +536,7 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                             yield StreamEvent(
                                 type=StreamEventType.TOOL_USE_START,
                                 content={
+                                    "id": tool_use_id,
                                     "name": tool_name,
                                     "input": tool_args,
                                 },
@@ -554,7 +561,8 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                             yield StreamEvent(
                                 type=StreamEventType.TOOL_RESULT,
                                 content={
-                                    "result": str(result.content),
+                                    "tool_use_id": tool_use_id,
+                                    "content": str(result.content),
                                     "is_error": result.isError,
                                 },
                                 iteration=i,
@@ -562,24 +570,20 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                                 metadata={"tool_id": tool_use_id},
                             )
 
-                            # Add tool result to messages
-                            tool_result_message: MessageUnionTypeDef = {
-                                "role": "user",
-                                "content": [
-                                    {
-                                        "toolResult": {
-                                            "content": mcp_content_to_bedrock_content(
-                                                result.content
-                                            ),
-                                            "toolUseId": tool_use_id,
-                                            "status": "error"
-                                            if result.isError
-                                            else "success",
-                                        }
+                            # Collect tool result
+                            tool_results.append(
+                                {
+                                    "toolResult": {
+                                        "content": mcp_content_to_bedrock_content(
+                                            result.content
+                                        ),
+                                        "toolUseId": tool_use_id,
+                                        "status": "error"
+                                        if result.isError
+                                        else "success",
                                     }
-                                ],
-                            }
-                            messages.append(tool_result_message)
+                                }
+                            )
 
                             # Yield tool use end event
                             yield StreamEvent(
@@ -588,6 +592,15 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                                 model=model,
                                 metadata={"tool_id": tool_use_id},
                             )
+
+                    # Create a single message with all tool results
+                    if tool_results:
+                        tool_result_message: MessageUnionTypeDef = {
+                            "role": "user",
+                            "content": tool_results,
+                        }
+                        messages.append(tool_result_message)
+                        responses.append(tool_result_message)
 
                     # Refresh tools to pick up any newly available tools enabled by previous execution
                     tool_config = await update_tools()
