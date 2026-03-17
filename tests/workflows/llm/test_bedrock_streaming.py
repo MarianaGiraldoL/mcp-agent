@@ -157,9 +157,11 @@ class TestBedrockStreaming:
         mock_llm.call_tool = AsyncMock(return_value=mock_tool_result)
 
         call_count = [0]
+        call_history = []
 
         def mock_converse_stream(**kwargs):
             call_count[0] += 1
+            call_history.append(kwargs)
             if call_count[0] == 1:
                 return self.create_mock_stream_response(tool_use_events)
             else:
@@ -177,6 +179,22 @@ class TestBedrockStreaming:
             events = []
             async for event in mock_llm.generate_stream("Search for something"):
                 events.append(event)
+
+            # Verify converse_stream was called twice
+            assert call_count[0] == 2
+
+            # Verify the second call's payload contains a single role="user" tool-result message
+            assert len(call_history) == 2
+            second_call_kwargs = call_history[1]
+            assert "messages" in second_call_kwargs
+            second_call_messages = second_call_kwargs["messages"]
+
+            # Find the user message with tool results
+            user_tool_result_messages = [
+                m for m in second_call_messages
+                if m.get("role") == "user" and any(c.get("toolResult") for c in m.get("content", []))
+            ]
+            assert len(user_tool_result_messages) == 1, "Expected exactly one user message with tool results"
 
         # Verify we have multiple iterations
         iteration_start_events = [

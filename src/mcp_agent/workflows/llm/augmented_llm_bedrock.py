@@ -237,24 +237,13 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                             request=tool_call_request, tool_call_id=tool_use_id
                         )
 
-                        tool_results.append(
-                            {
-                                "toolResult": {
-                                    "content": mcp_content_to_bedrock_content(
-                                        result.content
-                                    ),
-                                    "toolUseId": tool_use_id,
-                                    "status": "error" if result.isError else "success",
-                                }
-                            }
-                        )
+                        tool_results.append((tool_use_id, result))
 
                 # Create a single message with all tool results
                 if tool_results:
-                    tool_result_message = {
-                        "role": "user",
-                        "content": tool_results,
-                    }
+                    tool_result_message = BedrockConverter.create_tool_results_message(
+                        tool_results
+                    )
 
                     messages.append(tool_result_message)
                     responses.append(tool_result_message)
@@ -271,9 +260,11 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
         """Parse tool input from JSON string to dict if needed.
 
         Bedrock streams tool input as a JSON string that needs parsing.
-        Returns empty dict for empty strings (tools with no arguments).
+        Returns empty dict for None and empty strings (tools with no arguments).
         Falls back to the original value if parsing fails.
         """
+        if tool_input is None:
+            return {}
         if isinstance(tool_input, str):
             # Handle empty string as no arguments
             if tool_input == "":
@@ -569,19 +560,7 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                             )
 
                             # Collect tool result
-                            tool_results.append(
-                                {
-                                    "toolResult": {
-                                        "content": mcp_content_to_bedrock_content(
-                                            result.content
-                                        ),
-                                        "toolUseId": tool_use_id,
-                                        "status": "error"
-                                        if result.isError
-                                        else "success",
-                                    }
-                                }
-                            )
+                            tool_results.append((tool_use_id, result))
 
                             # Yield tool use end event
                             yield StreamEvent(
@@ -593,10 +572,9 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
 
                     # Create a single message with all tool results
                     if tool_results:
-                        tool_result_message: MessageUnionTypeDef = {
-                            "role": "user",
-                            "content": tool_results,
-                        }
+                        tool_result_message = BedrockConverter.create_tool_results_message(
+                            tool_results
+                        )
                         messages.append(tool_result_message)
                         responses.append(tool_result_message)
 
