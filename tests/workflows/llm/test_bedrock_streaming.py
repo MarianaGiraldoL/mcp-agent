@@ -405,3 +405,8 @@ class TestBedrockStreaming:
         assert len(tool_result_events) == 1
         assert tool_result_events[0].content is not None
         assert tool_result_events[0].content.get("is_error") is False
+        assert tool_result_events[0].content.get("tool_use_id") is not None
+        assert isinstance(tool_result_events[0].content.get("tool_use_id"), str)
+        assert len(tool_result_events[0].content.get("tool_use_id")) > 0
+        assert tool_result_events[0].content.get("result") is not None
+        assert isinstance(tool_result_events[0].content.get("result"), str)
