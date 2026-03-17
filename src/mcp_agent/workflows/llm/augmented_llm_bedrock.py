@@ -536,7 +536,6 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                             yield StreamEvent(
                                 type=StreamEventType.TOOL_USE_START,
                                 content={
-                                    "id": tool_use_id,
                                     "name": tool_name,
                                     "input": tool_args,
                                 },
@@ -563,7 +562,6 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                                 content={
                                     "result": str(result.content),
                                     "is_error": result.isError,
-                                    "tool_use_id": tool_use_id,
                                 },
                                 iteration=i,
                                 model=model,
