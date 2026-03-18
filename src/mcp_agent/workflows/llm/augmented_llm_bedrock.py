@@ -576,7 +576,6 @@ class BedrockAugmentedLLM(AugmentedLLM[MessageUnionTypeDef, MessageUnionTypeDef]
                             tool_results
                         )
                         messages.append(tool_result_message)
-                        responses.append(tool_result_message)
 
                     # Refresh tools to pick up any newly available tools enabled by previous execution
                     tool_config = await update_tools()
